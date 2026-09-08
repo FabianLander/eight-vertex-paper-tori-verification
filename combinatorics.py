@@ -32,7 +32,7 @@ CHECKS = []
 def check(ok, label, value=''):
     """One aligned PASS/FAIL line, collected for the closing summary."""
     CHECKS.append(bool(ok))
-    print(f'  {"PASS" if ok else "FAIL"}  {label:<46}{value}'.rstrip())
+    print(f'  {"PASS" if ok else "FAIL"}  {label:<46} {value}'.rstrip())
     return ok
 
 

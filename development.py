@@ -79,7 +79,7 @@ CHECKS = []
 def check(ok, label, value=''):
     """One aligned PASS/FAIL line, collected for the closing summary."""
     CHECKS.append(bool(ok))
-    print(f'  {"PASS" if ok else "FAIL"}  {label:<50}{value}'.rstrip())
+    print(f'  {"PASS" if ok else "FAIL"}  {label:<50} {value}'.rstrip())
     return ok
 
 
@@ -287,16 +287,16 @@ def link_cycle(FACES, edge2faces, v):
         e = frozenset((v, b)) if frozenset((v, a)) == e else frozenset((v, a))
         cur = nxt
         if len(walk) > len(star):
-            raise SystemExit(f'FAIL: link of vertex {v} is not a simple cycle')
+            raise ValueError(f'link of vertex {v} is not a simple cycle')
     j = FACES[f0].index(v)
     e_back = frozenset((v, FACES[f0][(j + 2) % 3]))
     if walk[-1][1] != e_back or len(walk) != len(star):
-        raise SystemExit(f'FAIL: link of vertex {v} misses part of its star, '
+        raise ValueError(f'link of vertex {v} misses part of its star, '
                          f'{len(walk)} faces walked of {len(star)}')
     return walk, star
 
 
-def vertex_holonomies(tag, FACES, edge2faces, Dv, tree_set, gluings, FLD):
+def vertex_holonomies(FACES, edge2faces, Dv, tree_set, gluings, FLD):
     """Compose the transition maps around each vertex link and check that the
     holonomy is the identity in both parts, on the actual field elements,
     together with the link being a single cycle through the whole star, the tree
@@ -347,12 +347,10 @@ def vertex_holonomies(tag, FACES, edge2faces, Dv, tree_set, gluings, FLD):
           f'stars {sizes}, sum {sum(sizes)} of 48')
     check(pts_ok, 'every chart of a star places its vertex alike',
           f'non-tree edges crossed {crossings}')
-    if not (ok and pts_ok):
-        raise SystemExit(f'FAIL: vertex holonomy check on {tag}')
 
 
 # ---------------------------------------------------------------- exact assembly
-def assemble(tag, FACES, P, ZETA, LOOPS, TARGET, FLD, sign_string, free_printed):
+def assemble(FACES, P, ZETA, LOOPS, TARGET, FLD, sign_string, free_printed):
     Dual.setup(FLD, 16)
     HALF = FLD.c(Fr(1, 2))
     zero = Dual.const(0)
@@ -518,7 +516,7 @@ def assemble(tag, FACES, P, ZETA, LOOPS, TARGET, FLD, sign_string, free_printed)
     # ---- vertex holonomies -------------------------------------------------
     Dv = {key: (z[0].v, z[1].v) for key, z in D.items()}
     assert len(Dv) == 48
-    vertex_holonomies(tag, FACES, edge2faces, Dv, set(tree), gluings, FLD)
+    vertex_holonomies(FACES, edge2faces, Dv, set(tree), gluings, FLD)
 
     # ---- periods of the marking -------------------------------------------
     loop_faces = []
@@ -617,10 +615,8 @@ def assemble(tag, FACES, P, ZETA, LOOPS, TARGET, FLD, sign_string, free_printed)
     note(f'det M = {FLD.show(dM)}')
 
     return dict(FACES=FACES, ROOT=ROOT, placements=placements, LOOPS=LOOPS,
-                loop_faces=loop_faces, rows=rows, piv=piv, names=names,
-                ZETA=ZETA, P=P, FLD=FLD, TARGET=TARGET, det=dM,
-                dev={k: (z[0].v, z[1].v) for k, z in D.items()},
-                order=[ROOT] + [gj for _, gj, _, _, _ in placements])
+                loop_faces=loop_faces, rows=rows, ZETA=ZETA, P=P, FLD=FLD,
+                det=dM)
 
 
 # ---------------------------------------------------------------- float twin
@@ -723,15 +719,13 @@ def main():
     print('development   face signs, gluings, holonomies, tau, det M != 0')
 
     print("\nSQUARE TORUS, target tau = i   field Q")
-    res_sq = assemble('SQUARE TORUS, target tau = i', data.FACES_SQUARE,
-                      PRINTED_SQUARE, data.ZETA_SQUARE, data.LOOPS_SQUARE,
+    res_sq = assemble(data.FACES_SQUARE, PRINTED_SQUARE, data.ZETA_SQUARE, data.LOOPS_SQUARE,
                       (Fr(0), Fr(1)), FieldQ, data.SIGNS_SQUARE,
                       data.FREE_SQUARE)
     fd_control(res_sq, (0.0, 1.0))
 
     print("\nHEXAGONAL TORUS, target tau = rho   field Q(sqrt3)")
-    res_hx = assemble('HEXAGONAL TORUS, target tau = rho', data.FACES_HEX,
-                      PRINTED_HEX, data.ZETA_HEX, data.LOOPS_HEX,
+    res_hx = assemble(data.FACES_HEX, PRINTED_HEX, data.ZETA_HEX, data.LOOPS_HEX,
                       (K(Fr(1, 2), 0), K(0, Fr(1, 2))),
                       FieldK, data.SIGNS_HEX, data.FREE_HEX)
     fd_control(res_hx, (0.5, math.sqrt(3.0)/2.0))

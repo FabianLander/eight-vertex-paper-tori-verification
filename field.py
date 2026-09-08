@@ -22,9 +22,6 @@ import math
 import random
 from fractions import Fraction as Fr
 
-__all__ = ['K', 'k', 'ZERO', 'ONE', 'SQRT3', 'HALF_SQRT3']
-
-
 class K:
     __slots__ = ('a', 'b')
 
@@ -88,20 +85,6 @@ class K:
     def __neg__(s):
         return K(-s.a, -s.b)
 
-    def __pos__(s):
-        return s
-
-    def __pow__(s, n):
-        if not (isinstance(n, int) and n >= 0):
-            return NotImplemented
-        r, base = K(1, 0), s
-        while n:
-            if n & 1:
-                r = r*base
-            base = base*base
-            n >>= 1
-        return r
-
     # ---------- order ----------
     def sign(s):
         a, b = s.a, s.b
@@ -155,15 +138,8 @@ class K:
     def to_float(s):
         return float(s.a) + float(s.b)*math.sqrt(3.0)
 
-    __float__ = to_float
-
-    def is_rational(s):
-        return s.b == 0
-
     def iszero(s):
         return s.a == 0 and s.b == 0
-
-    approx = to_float
 
 
 def k(x):
@@ -171,7 +147,6 @@ def k(x):
     return x if isinstance(x, K) else K(x, 0)
 
 
-ZERO = K(0, 0)
 ONE = K(1, 0)
 SQRT3 = K(0, 1)
 HALF_SQRT3 = K(0, Fr(1, 2))
@@ -232,14 +207,13 @@ def _selftest(trials=20000, seed=20260814):
     assert HALF_SQRT3*HALF_SQRT3 == K(Fr(3, 4), 0)
     assert K(Fr(-97, 56), 1).sign() == -1         # sqrt3 < 97/56
     assert K(Fr(-265, 153), 1).sign() == 1        # sqrt3 > 265/153
-    assert K(1, 0) ** 0 == ONE
     assert hash(K(Fr(2, 4), Fr(3, 6))) == hash(K(Fr(1, 2), Fr(1, 2)))
 
     print(f'  {"PASS" if not bad else "FAIL"}  '
           f'{"ring laws, sign rule and order against floats":<50}'
           f'{trials} trials, {bad} mismatches')
     print(f'  PASS  {"exact identities no float can decide":<50}'
-          f'11 assertions')
+          f'10 assertions')
     return bad == 0
 
 

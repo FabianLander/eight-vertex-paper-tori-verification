@@ -26,7 +26,11 @@ def main():
     for mod, what in MODULES:
         print()
         start = time.time()
-        ok, n = mod.main()
+        try:
+            ok, n = mod.main()
+        except Exception as e:
+            print(f'  FAIL  {type(e).__name__}: {e}')
+            ok, n = False, 0
         rows.append((mod.__name__, ok, n, time.time() - start, what))
 
     print('\nverify.py   what was tested\n')

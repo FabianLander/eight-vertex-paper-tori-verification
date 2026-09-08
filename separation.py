@@ -101,7 +101,7 @@ def face_forms(Q, face):
 
 
 # ------------------------------------------------------------ the certificates
-def certificate(Q, faces, zeta, H, FF, i, j):
+def certificate(Q, faces, H, FF, i, j):
     """Return (case, record, error). record holds the multipliers of the chosen
     certificate; error is None on success and a message on failure."""
     Fi, Fj = set(faces[i]), set(faces[j])
@@ -121,19 +121,19 @@ def certificate(Q, faces, zeta, H, FF, i, j):
             return 'c', None, 'g is not a multiple of the shared edge form'
         if mu.iszero():
             return 'c', None, 'mu = 0, the two lifted faces are coplanar'
-        return 'c', {'mu': mu, 'edge': (a, b)}, None
+        return 'c', {'mu': mu}, None
 
     # ---- case (b): the two faces share exactly one vertex
     if len(shared) == 1:
         s = next(iter(shared))
-        cand = [(f, t) for t, (f, vs) in enumerate(zip(forms, vanish)) if s in vs]
+        cand = [f for f, vs in zip(forms, vanish) if s in vs]
         if len(cand) != 4:
             return 'b', None, 'not four forms through the shared vertex'
         best = None
         for sg in (1, -1):
             gg = g if sg == 1 else aff_neg(g)
             for p, q in combinations(range(4), 2):
-                fp, fq = cand[p][0], cand[q][0]
+                fp, fq = cand[p], cand[q]
                 sol = solve([[fp[1], fq[1]], [fp[2], fq[2]]], [gg[1], gg[2]])
                 if sol is None:
                     continue                      # linear parts dependent
@@ -143,10 +143,8 @@ def certificate(Q, faces, zeta, H, FF, i, j):
                 if any(not (gg[t] - m1 * fp[t] - m2 * fq[t]).iszero() for t in range(3)):
                     continue
                 lo = m1 if less(m1, m2) else m2
-                det = fp[1] * fq[2] - fp[2] * fq[1]      # independence of linear parts
                 if best is None or less(best['low'], lo):
-                    best = {'sigma': sg, 'forms': (cand[p][1], cand[q][1]),
-                            'mu': m1, 'nu': m2, 'low': lo, 'vertex': s, 'det': det}
+                    best = {'low': lo}
         if best is None:
             return 'b', None, 'no two-form certificate with positive multipliers'
         return 'b', best, None
@@ -169,36 +167,25 @@ def certificate(Q, faces, zeta, H, FF, i, j):
             if any(not (gg[t] - (al if t == 0 else N(0)) - m1 * fp[t] - m2 * fq[t]).iszero()
                    for t in range(3)):
                 continue
-            det = fp[1] * fq[2] - fp[2] * fq[1]          # determinant of the 3x3 system
             if best is None or less(best['alpha'], al):
-                best = {'sigma': sg, 'forms': (p, q), 'alpha': al,
-                        'mu': m1, 'nu': m2, 'det': det}
+                best = {'sigma': sg, 'alpha': al}
     if best is None:
         return 'a', None, 'no certificate alpha + two forms'
     return 'a', best, None
 
 
-Q_SQUARE = data.Q_SQUARE
-ZETA_SQUARE = data.ZETA_SQUARE
-FACES_SQUARE = data.FACES_SQUARE
-
-Q_HEX = data.hex_base(N)
-ZETA_HEX = data.ZETA_HEX
-FACES_HEX = data.FACES_HEX
+CHECKS = []
 
 
 def check(ok, label, value=''):
     """One aligned PASS/FAIL line, collected for the closing summary."""
     CHECKS.append(bool(ok))
-    print(f'  {"PASS" if ok else "FAIL"}  {label:<50}{value}'.rstrip())
+    print(f'  {"PASS" if ok else "FAIL"}  {label:<50} {value}'.rstrip())
     return ok
 
 
 def note(label):
     print(f'        {label}')
-
-
-CHECKS = []
 
 
 # ------------------------------------------------------------- the corners
@@ -310,7 +297,7 @@ def run(name, Qraw, faces, zeta, split):
             else:
                 min_side = keep_min(min_side, m)
 
-        cert_case, rec, err = certificate(Q, faces, zeta, H, FF, i, j)
+        cert_case, rec, err = certificate(Q, faces, H, FF, i, j)
         if cert_case != case or rec is None:
             ok_bc = False
             note(f'pair {faces[i]}, {faces[j]}: identity route failed, {err}')
@@ -353,15 +340,15 @@ def run(name, Qraw, faces, zeta, split):
                        ('smallest |gap| at a corner off a shared simplex',
                         min_side)):
         note(f'{label}: {val}')
-        note(f'  ~ {val.approx():.10e}')
+        note(f'  ~ {val.to_float():.10e}')
 
 
 def main():
     print('separation   the gap at the overlap corners, weights, slopes')
-    run('SQUARE TORUS, field Q', Q_SQUARE, FACES_SQUARE,
-        ZETA_SQUARE, (24, 72, 24))
-    run('HEXAGONAL TORUS, field Q(sqrt3)', Q_HEX, FACES_HEX,
-        ZETA_HEX, (21, 75, 24))
+    run('SQUARE TORUS, field Q', data.Q_SQUARE, data.FACES_SQUARE,
+        data.ZETA_SQUARE, (24, 72, 24))
+    run('HEXAGONAL TORUS, field Q(sqrt3)', data.hex_base(N), data.FACES_HEX,
+        data.ZETA_HEX, (21, 75, 24))
     return all(CHECKS), len(CHECKS)
 
 
